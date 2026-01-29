@@ -1,41 +1,23 @@
-type UiMessage = {
-  type: "export";
-};
-
-type StatusMessage = {
-  type: "status" | "error";
-  message: string;
-};
-
-type ZipMessage = {
-  type: "zip";
-  bytes: number[];
-  filename: string;
-};
-
 const MAX_ZIP_BYTES = 500 * 1024;
 const UI_WIDTH = 360;
 const UI_HEIGHT = 220;
 
 figma.showUI(__html__, { width: UI_WIDTH, height: UI_HEIGHT });
 
-const postStatus = (message: string) => {
-  const payload: StatusMessage = { type: "status", message };
+const postStatus = (message) => {
+  const payload = { type: "status", message };
   figma.ui.postMessage(payload);
 };
 
-const postError = (message: string) => {
-  const payload: StatusMessage = { type: "error", message };
+const postError = (message) => {
+  const payload = { type: "error", message };
   figma.ui.postMessage(payload);
   figma.notify(message, { error: true });
 };
 
-const findDescendantByName = (
-  root: BaseNode & ChildrenMixin,
-  name: string,
-): BaseNode | null => root.findOne((node) => node.name === name);
+const findDescendantByName = (root, name) => root.findOne((node) => node.name === name);
 
-const ensureSingleFrameSelection = (): FrameNode | null => {
+const ensureSingleFrameSelection = () => {
   const selection = figma.currentPage.selection;
   if (selection.length !== 1 || selection[0].type !== "FRAME") {
     postError("Select exactly one FRAME to export.");
@@ -44,15 +26,15 @@ const ensureSingleFrameSelection = (): FrameNode | null => {
   return selection[0];
 };
 
-const exportBackgroundJpg = async (imageNode: SceneNode): Promise<Uint8Array> =>
+const exportBackgroundJpg = async (imageNode) =>
   imageNode.exportAsync({
     format: "JPG",
     constraint: { type: "SCALE", value: 2 },
     jpgQuality: 0.4,
   });
 
-const exportOverlaySvg = async (frame: FrameNode): Promise<Uint8Array> => {
-  let clone: FrameNode | null = null;
+const exportOverlaySvg = async (frame) => {
+  let clone = null;
   try {
     clone = frame.clone();
     clone.name = `${frame.name} - overlay export`;
@@ -60,26 +42,19 @@ const exportOverlaySvg = async (frame: FrameNode): Promise<Uint8Array> => {
     clone.y = frame.y;
     figma.currentPage.appendChild(clone);
 
-    const cloneBackground = findDescendantByName(
-      clone,
-      "background-image",
-    );
+    const cloneBackground = findDescendantByName(clone, "background-image");
     if (!cloneBackground) {
       throw new Error(
         "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
       );
     }
 
-    let editableBackground: BaseNode & ChildrenMixin = cloneBackground as BaseNode &
-      ChildrenMixin;
+    let editableBackground = cloneBackground;
     if (cloneBackground.type === "INSTANCE") {
       editableBackground = cloneBackground.detachInstance();
     }
 
-    const cloneImageNode = findDescendantByName(
-      editableBackground,
-      "Image/Video",
-    ) as SceneNode | null;
+    const cloneImageNode = findDescendantByName(editableBackground, "Image/Video");
     if (!cloneImageNode) {
       throw new Error(
         "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -98,7 +73,7 @@ const exportOverlaySvg = async (frame: FrameNode): Promise<Uint8Array> => {
   }
 };
 
-const buildHtml = (width: number, height: number): string => `<!doctype html>
+const buildHtml = (width, height) => `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -178,7 +153,7 @@ const crcTable = (() => {
   return table;
 })();
 
-const crc32 = (data: Uint8Array): number => {
+const crc32 = (data) => {
   let crc = 0xffffffff;
   for (const byte of data) {
     crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
@@ -186,19 +161,19 @@ const crc32 = (data: Uint8Array): number => {
   return (crc ^ 0xffffffff) >>> 0;
 };
 
-const writeUint16LE = (view: Uint8Array, offset: number, value: number) => {
+const writeUint16LE = (view, offset, value) => {
   view[offset] = value & 0xff;
   view[offset + 1] = (value >>> 8) & 0xff;
 };
 
-const writeUint32LE = (view: Uint8Array, offset: number, value: number) => {
+const writeUint32LE = (view, offset, value) => {
   view[offset] = value & 0xff;
   view[offset + 1] = (value >>> 8) & 0xff;
   view[offset + 2] = (value >>> 16) & 0xff;
   view[offset + 3] = (value >>> 24) & 0xff;
 };
 
-const concatParts = (parts: Uint8Array[], totalLength: number): Uint8Array => {
+const concatParts = (parts, totalLength) => {
   const output = new Uint8Array(totalLength);
   let offset = 0;
   for (const part of parts) {
@@ -208,19 +183,15 @@ const concatParts = (parts: Uint8Array[], totalLength: number): Uint8Array => {
   return output;
 };
 
-const buildZip = (
-  html: string,
-  bgBytes: Uint8Array,
-  overlayBytes: Uint8Array,
-): Uint8Array => {
+const buildZip = (html, bgBytes, overlayBytes) => {
   const files = [
     { name: "index.html", data: textEncoder.encode(html) },
     { name: "assets/bg.jpg", data: bgBytes },
     { name: "assets/overlay.svg", data: overlayBytes },
   ];
 
-  const localParts: Uint8Array[] = [];
-  const centralParts: Uint8Array[] = [];
+  const localParts = [];
+  const centralParts = [];
   let localOffset = 0;
 
   for (const file of files) {
@@ -289,10 +260,7 @@ const runExport = async () => {
     return;
   }
 
-  const backgroundInstance = findDescendantByName(
-    frame,
-    "background-image",
-  );
+  const backgroundInstance = findDescendantByName(frame, "background-image");
   if (!backgroundInstance) {
     postError(
       "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -300,10 +268,7 @@ const runExport = async () => {
     return;
   }
 
-  const imageNode = findDescendantByName(
-    backgroundInstance as BaseNode & ChildrenMixin,
-    "Image/Video",
-  ) as SceneNode | null;
+  const imageNode = findDescendantByName(backgroundInstance, "Image/Video");
   if (!imageNode) {
     postError(
       "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -315,7 +280,7 @@ const runExport = async () => {
   const bgBytes = await exportBackgroundJpg(imageNode);
 
   postStatus("Exporting overlay SVG...");
-  let overlayBytes: Uint8Array;
+  let overlayBytes;
   try {
     overlayBytes = await exportOverlaySvg(frame);
   } catch (error) {
@@ -341,7 +306,7 @@ const runExport = async () => {
   }
 
   postStatus("Ready to download.");
-  const payload: ZipMessage = {
+  const payload = {
     type: "zip",
     bytes: Array.from(zipBytes),
     filename: "html5-banner.zip",
@@ -349,7 +314,7 @@ const runExport = async () => {
   figma.ui.postMessage(payload);
 };
 
-figma.ui.onmessage = (message: UiMessage) => {
+figma.ui.onmessage = (message) => {
   if (message.type === "export") {
     runExport().catch(() => {
       postError("Unexpected error while exporting.");

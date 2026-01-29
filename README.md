@@ -2,11 +2,6 @@
 
 ## Build notes
 
-- Bundle the plugin code (and `fflate`) with a small bundler such as esbuild.
-- Example:
-  ```bash
-  npm install
-  npm install fflate
-  npx esbuild main.ts --bundle --outfile=main.js
-  ```
-- Load `manifest.json` in Figma. Ensure `main.js` and `ui.html` are in the same folder.
+- This repo ships a ready-to-run `main.js`. Load `manifest.json` in Figma with
+  `main.js` and `ui.html` in the same folder.
+- If you edit `main.ts`, mirror the change into `main.js` (Figma only loads JS).
