@@ -1,8 +1,8 @@
 {
-  "name": "HMTL Banner Export",
-  "id": "html-banner-export",
+  "name": "HTML Banner Export",
   "api": "1.0.0",
   "main": "main.js",
   "ui": "ui.html",
-  "editorType": ["figma"]
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page"
 }
