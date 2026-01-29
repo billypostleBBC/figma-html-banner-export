@@ -34,19 +34,32 @@ const exportBackgroundJpg = async (imageNode) =>
     jpgQuality: 0.4,
   });
 
-const gradientNames = ["radial", "50% overlay", "gradient L", "gradient R"];
-
 const getAbsolutePosition = (node) => {
   const transform = node.absoluteTransform;
   return { x: transform[0][2], y: transform[1][2] };
 };
 
-const buildEmptyGradientSvg = (frame) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${frame.width}" height="${frame.height}" viewBox="0 0 ${frame.width} ${frame.height}"></svg>`;
+const isVisibleSceneNode = (node) => ("visible" in node ? node.visible !== false : true);
 
-const exportOverlaySvgs = async (frame) => {
+const collectLeafNodes = (nodes) => {
+  const output = [];
+  nodes.forEach((node) => {
+    if (!isVisibleSceneNode(node)) {
+      return;
+    }
+    if ("children" in node && node.children.length > 0) {
+      output.push(...collectLeafNodes(node.children));
+      return;
+    }
+    output.push(node);
+  });
+  return output;
+};
+
+const sanitizeFileName = (value) => value.replace(/[^a-z0-9-_]/gi, "_").toLowerCase();
+
+const exportOverlayLayers = async (frame) => {
   let clone = null;
-  let gradientFrame = null;
   try {
     clone = frame.clone();
     clone.name = `${frame.name} - overlay export`;
@@ -81,49 +94,30 @@ const exportOverlaySvgs = async (frame) => {
     cloneImageNode.remove();
 
     const frameAbs = getAbsolutePosition(clone);
-    const gradientNodes = editableBackground
-      .findAll((node) => gradientNames.includes(node.name))
-      .filter((node) => node.type !== "DOCUMENT");
+    const leafNodes = collectLeafNodes(clone.children);
+    const exportedLayers = [];
 
-    gradientFrame = figma.createFrame();
-    gradientFrame.resize(frame.width, frame.height);
-    gradientFrame.name = `${frame.name} - gradients`;
-    gradientFrame.x = clone.x + frame.width + 100;
-    gradientFrame.y = clone.y;
-    gradientFrame.fills = [];
-    figma.currentPage.appendChild(gradientFrame);
-
-    if (gradientNodes.length > 0) {
-      gradientNodes.forEach((node) => {
-        const gradientClone = node.clone();
-        const abs = getAbsolutePosition(node);
-        gradientClone.x = abs.x - frameAbs.x;
-        gradientClone.y = abs.y - frameAbs.y;
-        gradientFrame.appendChild(gradientClone);
-        node.remove();
+    for (let index = 0; index < leafNodes.length; index += 1) {
+      const node = leafNodes[index];
+      const bytes = await node.exportAsync({
+        format: "SVG",
+        constraint: { type: "SCALE", value: 1 },
+      });
+      const abs = getAbsolutePosition(node);
+      exportedLayers.push({
+        name: `${index + 1}-${sanitizeFileName(node.name || "layer")}`,
+        bytes,
+        x: abs.x - frameAbs.x,
+        y: abs.y - frameAbs.y,
+        width: node.width,
+        height: node.height,
       });
     }
 
-    const overlayBytes = await clone.exportAsync({
-      format: "SVG",
-      constraint: { type: "SCALE", value: 1 },
-    });
-
-    const gradientBytes =
-      gradientNodes.length > 0
-        ? await gradientFrame.exportAsync({
-            format: "SVG",
-            constraint: { type: "SCALE", value: 1 },
-          })
-        : encodeText(buildEmptyGradientSvg(frame));
-
-    return { overlayBytes, gradientBytes };
+    return exportedLayers;
   } finally {
     if (clone) {
       clone.remove();
-    }
-    if (gradientFrame) {
-      gradientFrame.remove();
     }
   }
 };
@@ -147,8 +141,7 @@ const buildHtml = (width, height) => `<!doctype html>
         cursor: pointer;
       }
       #bg,
-      #gradient,
-      #overlay {
+      .layer {
         position: absolute;
         left: 0;
         top: 0;
@@ -158,8 +151,7 @@ const buildHtml = (width, height) => `<!doctype html>
       #bg {
         object-fit: cover;
       }
-      #gradient,
-      #overlay {
+      .layer {
         pointer-events: none;
       }
     </style>
@@ -167,8 +159,7 @@ const buildHtml = (width, height) => `<!doctype html>
   <body>
     <div id="ad" role="button" tabindex="0" aria-label="Advertisement">
       <img id="bg" src="assets/bg.jpg" alt="" />
-      <img id="gradient" src="assets/gradient.svg" alt="" />
-      <img id="overlay" src="assets/overlay.svg" alt="" />
+      {{layers}}
     </div>
     <script>
       (function () {
@@ -257,12 +248,14 @@ const concatParts = (parts, totalLength) => {
   return output;
 };
 
-const buildZip = (html, bgBytes, overlayBytes, gradientBytes) => {
+const buildZip = (html, bgBytes, layers) => {
   const files = [
     { name: "index.html", data: encodeText(html) },
     { name: "assets/bg.jpg", data: bgBytes },
-    { name: "assets/overlay.svg", data: overlayBytes },
-    { name: "assets/gradient.svg", data: gradientBytes },
+    ...layers.map((layer) => ({
+      name: `assets/${layer.name}.svg`,
+      data: layer.bytes,
+    })),
   ];
 
   const localParts = [];
@@ -361,12 +354,9 @@ const runExport = async () => {
   const bgBytes = await exportBackgroundJpg(imageNode);
 
   postStatus("Exporting overlay SVG...");
-  let overlayBytes;
-  let gradientBytes;
+  let layers;
   try {
-    const overlayPayload = await exportOverlaySvgs(frame);
-    overlayBytes = overlayPayload.overlayBytes;
-    gradientBytes = overlayPayload.gradientBytes;
+    layers = await exportOverlayLayers(frame);
   } catch (error) {
     postError(
       error instanceof Error
@@ -377,10 +367,17 @@ const runExport = async () => {
   }
 
   postStatus("Building HTML...");
-  const html = buildHtml(frame.width, frame.height);
+  const layersMarkup = layers
+    .map((layer) => {
+      const left = Math.round(layer.x);
+      const top = Math.round(layer.y);
+      return `<img class="layer" src="assets/${layer.name}.svg" alt="" style="left:${left}px; top:${top}px; width:${Math.round(layer.width)}px; height:${Math.round(layer.height)}px;" />`;
+    })
+    .join("");
+  const html = buildHtml(frame.width, frame.height).replace("{{layers}}", layersMarkup);
 
   postStatus("Zipping assets...");
-  const zipBytes = buildZip(html, bgBytes, overlayBytes, gradientBytes);
+  const zipBytes = buildZip(html, bgBytes, layers);
 
   if (zipBytes.length > MAX_ZIP_BYTES) {
     postError(

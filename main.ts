@@ -52,26 +52,45 @@ const exportBackgroundJpg = async (imageNode: SceneNode): Promise<Uint8Array> =>
     jpgQuality: 0.4,
   });
 
-const gradientNames = [
-  "radial",
-  "50% overlay",
-  "gradient L",
-  "gradient R",
-];
-
 const getAbsolutePosition = (node: SceneNode) => {
   const transform = node.absoluteTransform;
   return { x: transform[0][2], y: transform[1][2] };
 };
 
-const buildEmptyGradientSvg = (frame: FrameNode) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${frame.width}" height="${frame.height}" viewBox="0 0 ${frame.width} ${frame.height}"></svg>`;
+type ExportedLayer = {
+  name: string;
+  bytes: Uint8Array;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
-const exportOverlaySvgs = async (
+const isVisibleSceneNode = (node: SceneNode) =>
+  "visible" in node ? node.visible !== false : true;
+
+const collectLeafNodes = (nodes: readonly SceneNode[]): SceneNode[] => {
+  const output: SceneNode[] = [];
+  nodes.forEach((node) => {
+    if (!isVisibleSceneNode(node)) {
+      return;
+    }
+    if ("children" in node && node.children.length > 0) {
+      output.push(...collectLeafNodes(node.children as SceneNode[]));
+      return;
+    }
+    output.push(node);
+  });
+  return output;
+};
+
+const sanitizeFileName = (value: string) =>
+  value.replace(/[^a-z0-9-_]/gi, "_").toLowerCase();
+
+const exportOverlayLayers = async (
   frame: FrameNode,
-): Promise<{ overlayBytes: Uint8Array; gradientBytes: Uint8Array }> => {
+): Promise<ExportedLayer[]> => {
   let clone: FrameNode | null = null;
-  let gradientFrame: FrameNode | null = null;
   try {
     clone = frame.clone();
     clone.name = `${frame.name} - overlay export`;
@@ -107,49 +126,30 @@ const exportOverlaySvgs = async (
     cloneImageNode.remove();
 
     const frameAbs = getAbsolutePosition(clone);
-    const gradientNodes = (editableBackground as BaseNode & ChildrenMixin)
-      .findAll((node) => gradientNames.includes(node.name))
-      .filter((node): node is SceneNode => node.type !== "DOCUMENT");
+    const leafNodes = collectLeafNodes(clone.children as SceneNode[]);
+    const exportedLayers: ExportedLayer[] = [];
 
-    gradientFrame = figma.createFrame();
-    gradientFrame.resize(frame.width, frame.height);
-    gradientFrame.name = `${frame.name} - gradients`;
-    gradientFrame.x = clone.x + frame.width + 100;
-    gradientFrame.y = clone.y;
-    gradientFrame.fills = [];
-    figma.currentPage.appendChild(gradientFrame);
-
-    if (gradientNodes.length > 0) {
-      gradientNodes.forEach((node) => {
-        const gradientClone = node.clone();
-        const abs = getAbsolutePosition(node);
-        gradientClone.x = abs.x - frameAbs.x;
-        gradientClone.y = abs.y - frameAbs.y;
-        gradientFrame?.appendChild(gradientClone);
-        node.remove();
+    for (let index = 0; index < leafNodes.length; index += 1) {
+      const node = leafNodes[index];
+      const bytes = await node.exportAsync({
+        format: "SVG",
+        constraint: { type: "SCALE", value: 1 },
+      });
+      const abs = getAbsolutePosition(node);
+      exportedLayers.push({
+        name: `${index + 1}-${sanitizeFileName(node.name || "layer")}`,
+        bytes,
+        x: abs.x - frameAbs.x,
+        y: abs.y - frameAbs.y,
+        width: node.width,
+        height: node.height,
       });
     }
 
-    const overlayBytes = await clone.exportAsync({
-      format: "SVG",
-      constraint: { type: "SCALE", value: 1 },
-    });
-
-    const gradientBytes =
-      gradientNodes.length > 0
-        ? await gradientFrame.exportAsync({
-            format: "SVG",
-            constraint: { type: "SCALE", value: 1 },
-          })
-        : encodeText(buildEmptyGradientSvg(frame));
-
-    return { overlayBytes, gradientBytes };
+    return exportedLayers;
   } finally {
     if (clone) {
       clone.remove();
-    }
-    if (gradientFrame) {
-      gradientFrame.remove();
     }
   }
 };
@@ -173,8 +173,7 @@ const buildHtml = (width: number, height: number): string => `<!doctype html>
         cursor: pointer;
       }
       #bg,
-      #gradient,
-      #overlay {
+      .layer {
         position: absolute;
         left: 0;
         top: 0;
@@ -184,8 +183,7 @@ const buildHtml = (width: number, height: number): string => `<!doctype html>
       #bg {
         object-fit: cover;
       }
-      #gradient,
-      #overlay {
+      .layer {
         pointer-events: none;
       }
     </style>
@@ -193,8 +191,7 @@ const buildHtml = (width: number, height: number): string => `<!doctype html>
   <body>
     <div id="ad" role="button" tabindex="0" aria-label="Advertisement">
       <img id="bg" src="assets/bg.jpg" alt="" />
-      <img id="gradient" src="assets/gradient.svg" alt="" />
-      <img id="overlay" src="assets/overlay.svg" alt="" />
+      {{layers}}
     </div>
     <script>
       (function () {
@@ -286,14 +283,15 @@ const concatParts = (parts: Uint8Array[], totalLength: number): Uint8Array => {
 const buildZip = (
   html: string,
   bgBytes: Uint8Array,
-  overlayBytes: Uint8Array,
-  gradientBytes: Uint8Array,
+  layers: ExportedLayer[],
 ): Uint8Array => {
   const files = [
     { name: "index.html", data: encodeText(html) },
     { name: "assets/bg.jpg", data: bgBytes },
-    { name: "assets/overlay.svg", data: overlayBytes },
-    { name: "assets/gradient.svg", data: gradientBytes },
+    ...layers.map((layer) => ({
+      name: `assets/${layer.name}.svg`,
+      data: layer.bytes,
+    })),
   ];
 
   const localParts: Uint8Array[] = [];
@@ -391,13 +389,10 @@ const runExport = async () => {
   postStatus("Exporting background JPG...");
   const bgBytes = await exportBackgroundJpg(imageNode);
 
-  postStatus("Exporting overlay SVG...");
-  let overlayBytes: Uint8Array;
-  let gradientBytes: Uint8Array;
+  postStatus("Exporting overlay SVGs...");
+  let layers: ExportedLayer[];
   try {
-    const overlayPayload = await exportOverlaySvgs(frame);
-    overlayBytes = overlayPayload.overlayBytes;
-    gradientBytes = overlayPayload.gradientBytes;
+    layers = await exportOverlayLayers(frame);
   } catch (error) {
     postError(
       error instanceof Error
@@ -408,10 +403,20 @@ const runExport = async () => {
   }
 
   postStatus("Building HTML...");
-  const html = buildHtml(frame.width, frame.height);
+  const layersMarkup = layers
+    .map((layer) => {
+      const left = Math.round(layer.x);
+      const top = Math.round(layer.y);
+      return `<img class="layer" src="assets/${layer.name}.svg" alt="" style="left:${left}px; top:${top}px; width:${Math.round(layer.width)}px; height:${Math.round(layer.height)}px;" />`;
+    })
+    .join("");
+  const html = buildHtml(frame.width, frame.height).replace(
+    "{{layers}}",
+    layersMarkup,
+  );
 
   postStatus("Zipping assets...");
-  const zipBytes = buildZip(html, bgBytes, overlayBytes, gradientBytes);
+  const zipBytes = buildZip(html, bgBytes, layers);
 
   if (zipBytes.length > MAX_ZIP_BYTES) {
     postError(
