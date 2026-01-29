@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HTML Banner Export</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, sans-serif;
+        color: #1a1a1a;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #ffffff;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 12px;
+      }
+      button {
+        width: 100%;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 6px;
+        background: #1d4ed8;
+        color: #ffffff;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      #status {
+        margin-top: 12px;
+        font-size: 12px;
+        color: #374151;
+        min-height: 32px;
+        line-height: 1.4;
+      }
+      #status.error {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>HTML Banner Export</h1>
+    <button id="export">Export ZIP</button>
+    <div id="status">Ready.</div>
+
+    <script>
+      const exportButton = document.getElementById("export");
+      const statusEl = document.getElementById("status");
+
+      const setStatus = (message, isError = false) => {
+        statusEl.textContent = message;
+        statusEl.classList.toggle("error", isError);
+        exportButton.disabled = false;
+      };
+
+      exportButton.addEventListener("click", () => {
+        exportButton.disabled = true;
+        setStatus("Starting export...");
+        parent.postMessage({ pluginMessage: { type: "export" } }, "*");
+      });
+
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (!message) {
+          return;
+        }
+        if (message.type === "status") {
+          setStatus(message.message, false);
+        }
+        if (message.type === "error") {
+          setStatus(message.message, true);
+        }
+        if (message.type === "zip") {
+          setStatus("Download ready.", false);
+          const bytes = new Uint8Array(message.bytes);
+          const blob = new Blob([bytes], { type: "application/zip" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = message.filename || "html5-banner.zip";
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+      };
+    </script>
+  </body>
+</html>
