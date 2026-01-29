@@ -164,7 +164,23 @@ const buildHtml = (width: number, height: number): string => `<!doctype html>
 </html>
 `;
 
-const textEncoder = new TextEncoder();
+const encodeText = (value: string): Uint8Array => {
+  if (typeof TextEncoder !== "undefined") {
+    return new TextEncoder().encode(value);
+  }
+  const encoded = encodeURIComponent(value);
+  const bytes: number[] = [];
+  for (let i = 0; i < encoded.length; i += 1) {
+    const char = encoded[i];
+    if (char === "%") {
+      bytes.push(parseInt(encoded.slice(i + 1, i + 3), 16));
+      i += 2;
+    } else {
+      bytes.push(char.charCodeAt(0));
+    }
+  }
+  return new Uint8Array(bytes);
+};
 
 const crcTable = (() => {
   const table = new Uint32Array(256);
@@ -214,7 +230,7 @@ const buildZip = (
   overlayBytes: Uint8Array,
 ): Uint8Array => {
   const files = [
-    { name: "index.html", data: textEncoder.encode(html) },
+    { name: "index.html", data: encodeText(html) },
     { name: "assets/bg.jpg", data: bgBytes },
     { name: "assets/overlay.svg", data: overlayBytes },
   ];
@@ -224,7 +240,7 @@ const buildZip = (
   let localOffset = 0;
 
   for (const file of files) {
-    const nameBytes = textEncoder.encode(file.name);
+    const nameBytes = encodeText(file.name);
     const crc = crc32(file.data);
     const localHeader = new Uint8Array(30 + nameBytes.length);
 
