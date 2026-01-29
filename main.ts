@@ -30,10 +30,11 @@ const postError = (message: string) => {
   figma.notify(message, { error: true });
 };
 
-const findDescendantByName = (
+const findDescendantByNames = (
   root: BaseNode & ChildrenMixin,
-  name: string,
-): BaseNode | null => root.findOne((node) => node.name === name);
+  names: string[],
+): BaseNode | null =>
+  root.findOne((node) => names.includes(node.name));
 
 const ensureSingleFrameSelection = (): FrameNode | null => {
   const selection = figma.currentPage.selection;
@@ -60,10 +61,10 @@ const exportOverlaySvg = async (frame: FrameNode): Promise<Uint8Array> => {
     clone.y = frame.y;
     figma.currentPage.appendChild(clone);
 
-    const cloneBackground = findDescendantByName(
-      clone,
+    const cloneBackground = findDescendantByNames(clone, [
       "background-image",
-    );
+      "Background Image",
+    ]);
     if (!cloneBackground) {
       throw new Error(
         "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -76,10 +77,10 @@ const exportOverlaySvg = async (frame: FrameNode): Promise<Uint8Array> => {
       editableBackground = cloneBackground.detachInstance();
     }
 
-    const cloneImageNode = findDescendantByName(
-      editableBackground,
+    const cloneImageNode = findDescendantByNames(editableBackground, [
       "Image/Video",
-    ) as SceneNode | null;
+      "backgroundImage",
+    ]) as SceneNode | null;
     if (!cloneImageNode) {
       throw new Error(
         "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -305,10 +306,10 @@ const runExport = async () => {
     return;
   }
 
-  const backgroundInstance = findDescendantByName(
-    frame,
+  const backgroundInstance = findDescendantByNames(frame, [
     "background-image",
-  );
+    "Background Image",
+  ]);
   if (!backgroundInstance) {
     postError(
       "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -316,9 +317,9 @@ const runExport = async () => {
     return;
   }
 
-  const imageNode = findDescendantByName(
+  const imageNode = findDescendantByNames(
     backgroundInstance as BaseNode & ChildrenMixin,
-    "Image/Video",
+    ["Image/Video", "backgroundImage"],
   ) as SceneNode | null;
   if (!imageNode) {
     postError(

@@ -15,7 +15,8 @@ const postError = (message) => {
   figma.notify(message, { error: true });
 };
 
-const findDescendantByName = (root, name) => root.findOne((node) => node.name === name);
+const findDescendantByNames = (root, names) =>
+  root.findOne((node) => names.includes(node.name));
 
 const ensureSingleFrameSelection = () => {
   const selection = figma.currentPage.selection;
@@ -42,7 +43,10 @@ const exportOverlaySvg = async (frame) => {
     clone.y = frame.y;
     figma.currentPage.appendChild(clone);
 
-    const cloneBackground = findDescendantByName(clone, "background-image");
+    const cloneBackground = findDescendantByNames(clone, [
+      "background-image",
+      "Background Image",
+    ]);
     if (!cloneBackground) {
       throw new Error(
         "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -54,7 +58,10 @@ const exportOverlaySvg = async (frame) => {
       editableBackground = cloneBackground.detachInstance();
     }
 
-    const cloneImageNode = findDescendantByName(editableBackground, "Image/Video");
+    const cloneImageNode = findDescendantByNames(editableBackground, [
+      "Image/Video",
+      "backgroundImage",
+    ]);
     if (!cloneImageNode) {
       throw new Error(
         "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -276,7 +283,10 @@ const runExport = async () => {
     return;
   }
 
-  const backgroundInstance = findDescendantByName(frame, "background-image");
+  const backgroundInstance = findDescendantByNames(frame, [
+    "background-image",
+    "Background Image",
+  ]);
   if (!backgroundInstance) {
     postError(
       "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
@@ -284,7 +294,10 @@ const runExport = async () => {
     return;
   }
 
-  const imageNode = findDescendantByName(backgroundInstance, "Image/Video");
+  const imageNode = findDescendantByNames(backgroundInstance, [
+    "Image/Video",
+    "backgroundImage",
+  ]);
   if (!imageNode) {
     postError(
       "Missing background-image/Image/Video layer. Ensure the background photo is nested correctly.",
