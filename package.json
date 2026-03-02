@@ -1,0 +1,25 @@
+{
+  "name": "html-banner-export",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:code && npm run build:ui && npm run build:styles && npm run build:html",
+    "build:code": "esbuild src/code.ts --bundle --platform=browser --format=iife --target=es2018 --outfile=dist/code.js",
+    "build:ui": "esbuild src/ui.ts --bundle --platform=browser --format=iife --target=es2018 --outfile=dist/ui.js",
+    "build:styles": "cp src/ui.css dist/ui.css",
+    "build:html": "node scripts/build-ui-html.mjs",
+    "dev": "npm run build -- --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.117.0",
+    "@types/node": "^24.3.0",
+    "esbuild": "^0.27.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
