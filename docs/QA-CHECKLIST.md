@@ -20,9 +20,12 @@
 
 ## Video Handling
 - Run export with no video URLs and verify success.
-- Provide only MP4 URL for one size and verify UI blocks with pair requirement.
-- Provide both MP4/WebM for a size without `background-image` and verify failure.
-- Provide both URLs with `background-image` present and verify exported HTML includes two `<source>` tags.
+- Select only one supported size and verify only that size's MP4 URL field is shown.
+- Provide MP4 for a size without `Image/Video` and verify failure.
+- Provide MP4 with `Image/Video` present and verify exported HTML includes one MP4 `<source>` tag.
+- Verify runtime starts muted/autoplay, does not loop, and playback button cycles pause/play/replay.
+- Verify mute/unmute button toggles audio state.
+- Verify both control buttons are clickable without triggering click-through.
 
 ## Typography / Fonts
 - Verify ZIP contains SVG text files (`text-headline.svg`, `text-compliance.svg`).

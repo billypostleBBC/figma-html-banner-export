@@ -7,8 +7,6 @@ export interface SizeDimensions {
 
 export interface VideoSpec {
   mp4Url: string;
-  webmUrl: string;
-  autoplayMutedLoop: boolean;
 }
 
 export interface LayerBox {

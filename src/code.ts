@@ -16,6 +16,7 @@ const RASTER_EXPORT_SCALE = 2;
 const BACKUP_EXPORT_SCALE = 1;
 const LAYER_NAMES = {
   bg: 'background-image',
+  video: 'Image/Video',
   logo: 'Branding',
   headline: 'Heading',
   compliance: 'compliance',
@@ -159,7 +160,11 @@ function normalizeVideoMap(
   const output: Partial<Record<SupportedSize, VideoSpec | null>> = {};
 
   for (const size of Object.keys(SUPPORTED_SIZES) as SupportedSize[]) {
-    output[size] = normalizeVideoSpec(input[size]);
+    try {
+      output[size] = normalizeVideoSpec(input[size]);
+    } catch (error) {
+      throw new Error(`${size}: ${toErrorMessage(error)}`);
+    }
   }
 
   return output;
@@ -233,9 +238,9 @@ function resolveSelectionForExport(
     });
 
     if (videoBySize[size]) {
-      const videoSlot = findSceneNodeByName(node, LAYER_NAMES.bg);
+      const videoSlot = findSceneNodeByName(node, LAYER_NAMES.video);
       if (!videoSlot) {
-        issues.push(`Frame “${node.name}”: video URLs were provided for ${size}, but layer “${LAYER_NAMES.bg}” is missing.`);
+        issues.push(`Frame “${node.name}”: video URL was provided for ${size}, but layer “${LAYER_NAMES.video}” is missing.`);
       }
     }
 
@@ -291,8 +296,8 @@ async function extractFramePayload(
   const videoSlotNode = video
     ? requireBoxLayer(
         frame,
-        LAYER_NAMES.bg,
-        `${framePrefix}: layer “${LAYER_NAMES.bg}” must exist and be sized when video URLs are supplied for ${size}.`,
+        LAYER_NAMES.video,
+        `${framePrefix}: layer “${LAYER_NAMES.video}” must exist and be sized when video URL is supplied for ${size}.`,
       )
     : null;
 

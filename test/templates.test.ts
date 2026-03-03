@@ -21,8 +21,6 @@ const sampleInput: CreativeTemplateInput = {
   hasVideo: true,
   video: {
     mp4Url: 'https://cdn.example.com/demo.mp4',
-    webmUrl: 'https://cdn.example.com/demo.webm',
-    autoplayMutedLoop: true,
   },
   hasSubhead: true,
   layout: {

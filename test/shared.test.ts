@@ -14,25 +14,59 @@ describe('shared utilities', () => {
     expect(fileNameForZip('300x600')).toBe('creative_300x600.zip');
   });
 
-  test('normalizeVideoSpec accepts full pair and rejects partial pair', () => {
+  test('normalizeVideoSpec accepts MP4 and ignores empty values', () => {
     expect(
       normalizeVideoSpec({
         mp4Url: 'https://cdn.example.com/video.mp4',
-        webmUrl: 'https://cdn.example.com/video.webm',
-        autoplayMutedLoop: true,
       }),
     ).toEqual({
       mp4Url: 'https://cdn.example.com/video.mp4',
-      webmUrl: 'https://cdn.example.com/video.webm',
-      autoplayMutedLoop: true,
     });
 
+    expect(normalizeVideoSpec({ mp4Url: '' })).toBeNull();
+  });
+
+  test('normalizeVideoSpec accepts HTTPS URLs wrapped in quotes', () => {
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '\'https://cdn.example.com/video.mp4\'',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
+    });
+
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '"https://cdn.example.com/video.mp4"',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
+    });
+  });
+
+  test('normalizeVideoSpec accepts URLs wrapped in smart quotes and angle brackets', () => {
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '“https://cdn.example.com/video.mp4”',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
+    });
+
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '<https://cdn.example.com/video.mp4>',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
+    });
+  });
+
+  test('normalizeVideoSpec keeps https-only requirement', () => {
     expect(() =>
       normalizeVideoSpec({
-        mp4Url: 'https://cdn.example.com/video.mp4',
-        webmUrl: '',
-        autoplayMutedLoop: true,
+        mp4Url: 'http://cdn.example.com/video.mp4',
       }),
-    ).toThrow('Video requires both MP4 and WebM URLs');
+    ).toThrow('Video MP4 URL must use https://.');
   });
 });
