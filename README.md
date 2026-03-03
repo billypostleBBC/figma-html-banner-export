@@ -9,7 +9,7 @@ Figma plugin for exporting selected design frames into GAM-ready HTML5 creative 
 - Multi-size exports download as one bundle ZIP containing each size ZIP.
 - No campaign slug or fallback URL input in plugin UI.
 - Single `clickTag` exit implementation.
-- Optional CDN video (`mp4` + `webm`) per size.
+- Optional CDN video (`mp4`) per size.
 - Hard budget: `1.5MB` per creative excluding video files.
 - Backup image included as `backup.jpg`.
 - Text exported as SVG artwork (no web fonts, no editable runtime copy).
@@ -40,11 +40,12 @@ CTA naming note:
 
 Optional:
 - `Subheading` (text)
+- `Image/Video` (sized scene node used as video slot only when MP4 is configured)
 
 Video behavior:
-- If video URLs are supplied for a size, `background-image` is used as the video slot geometry.
-- No separate `video_slot` or `poster` layer is required.
-- `backup.jpg` is always auto-generated from the parent frame export for static fallback.
+- If an MP4 URL is supplied for a size, `Image/Video` is used as the video slot geometry.
+- Runtime video uses `object-fit: cover`, `autoplay`, `muted` by default, and `loop = false`.
+- Runtime control buttons are rendered above `click_area` (play/pause/replay bottom-left, mute/unmute bottom-right).
 
 If required layers are missing, mistyped, or wrong type, export fails with an actionable error.
 

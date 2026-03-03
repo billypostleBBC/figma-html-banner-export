@@ -33,13 +33,13 @@ CTA naming compatibility:
 | Layer name | Type | Rule |
 | --- | --- | --- |
 | `Subheading` | Text node | Optional. Exported as `text-subhead.svg` when present |
+| `Image/Video` | Sized scene node | Optional. Required only when MP4 is configured for that size |
 
 ## Video slot rule
 
-- If MP4 + WebM URLs are supplied for a size, the plugin uses `background-image` as the video slot geometry.
-- No separate `video_slot` layer is used.
-- No `poster` layer is used.
-- Fallback static is always generated automatically from a JPG export of the parent frame (`backup.jpg`).
+- If an MP4 URL is supplied for a size, the plugin uses `Image/Video` as the video slot geometry.
+- Runtime video uses `object-fit: cover`, autoplay, muted by default, and no loop.
+- Runtime controls render inside this slot (play/pause/replay bottom-left, mute/unmute bottom-right).
 
 ## Recommended frame naming (not enforced)
 
@@ -64,6 +64,7 @@ creative_{size} (FRAME)
   Branding
   Heading
   Subheading (optional)
+  Image/Video (optional; required when MP4 is configured)
   compliance
   cta
   click_area
@@ -75,7 +76,7 @@ creative_{size} (FRAME)
 - Do not change text layers (`Heading`, `Subheading`, `compliance`) to non-text nodes.
 - Keep only one layer for each required name per frame to avoid first-match ambiguity.
 - Ensure `cta` includes a visible non-text fill behind the label so black CTA text remains legible.
-- If you configure video for a size in the plugin UI, that frame must include `background-image`.
+- If you configure video for a size in the plugin UI, that frame must include `Image/Video`.
 - Keep `click_area` as a real sized layer (not hidden metadata/group name only).
 
 ## Common failure causes

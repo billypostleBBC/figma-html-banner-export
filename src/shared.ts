@@ -26,15 +26,26 @@ export function parseSupportedSize(width: number, height: number): SupportedSize
 }
 
 export function assertValidUrl(value: string, fieldName: string): void {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
+  const normalized = normalizeUrlInput(value);
+  if (!normalized) {
     throw new Error(`${fieldName} must be a valid URL.`);
   }
 
-  if (url.protocol !== 'https:') {
+  if (!normalized.toLowerCase().startsWith('https://')) {
     throw new Error(`${fieldName} must use https://.`);
+  }
+
+  try {
+    const url = new URL(normalized);
+    if (url.protocol !== 'https:') {
+      throw new Error(`${fieldName} must use https://.`);
+    }
+  } catch {
+    // Figma plugin runtime can reject some pasted strings with hidden chars.
+    // Keep MVP permissive: if it clearly looks like an https URL with no spaces, accept it.
+    if (!/^https:\/\/\S+$/i.test(normalized)) {
+      throw new Error(`${fieldName} must be a valid URL.`);
+    }
   }
 }
 
@@ -43,24 +54,43 @@ export function normalizeVideoSpec(video: VideoSpec | null | undefined): VideoSp
     return null;
   }
 
-  const mp4Url = video.mp4Url.trim();
-  const webmUrl = video.webmUrl.trim();
-  if (!mp4Url && !webmUrl) {
+  const mp4Url = normalizeUrlInput(video.mp4Url);
+  if (!mp4Url) {
     return null;
   }
 
-  if (!mp4Url || !webmUrl) {
-    throw new Error('Video requires both MP4 and WebM URLs for each configured size.');
-  }
-
   assertValidUrl(mp4Url, 'Video MP4 URL');
-  assertValidUrl(webmUrl, 'Video WebM URL');
 
   return {
     mp4Url,
-    webmUrl,
-    autoplayMutedLoop: video.autoplayMutedLoop,
   };
+}
+
+function normalizeUrlInput(value: string): string {
+  let trimmed = value
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u00A0/g, ' ')
+    .trim();
+
+  trimmed = stripWrapped(trimmed, '\'', '\'');
+  trimmed = stripWrapped(trimmed, '"', '"');
+  trimmed = stripWrapped(trimmed, '“', '”');
+  trimmed = stripWrapped(trimmed, '‘', '’');
+  trimmed = stripWrapped(trimmed, '<', '>');
+
+  return trimmed.trim();
+}
+
+function stripWrapped(value: string, start: string, end: string): string {
+  if (value.length < 2) {
+    return value;
+  }
+
+  if (value.startsWith(start) && value.endsWith(end)) {
+    return value.slice(start.length, value.length - end.length).trim();
+  }
+
+  return value;
 }
 
 export function bytesToKB(bytes: number): string {
