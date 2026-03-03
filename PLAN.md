@@ -1,7 +1,7 @@
 # Revised MVP Plan: Figma to GAM HTML Ad Exporter (BBC Internal)
 
 ## Summary
-Build a TypeScript Figma plugin that exports selected frames into GAM-ready HTML5 ZIPs (one ZIP per size), with strict layer naming validation, single `clickTag` wiring, optional CDN video embeds (`mp4` + `webm`), aggressive image compression, and a hard `1.5MB` per-creative cap excluding video files.
+Build a TypeScript Figma plugin that exports selected frames into GAM-ready HTML5 ZIPs (one ZIP per size), with strict layer naming validation, single `clickTag` wiring, optional CDN video embeds (`mp4`), aggressive image compression, and a hard `1.5MB` per-creative cap excluding video files.
 
 Key scope decision: all text is exported as SVG artwork, not live web text, so no font files are shipped and no runtime font dependency exists.
 
@@ -51,8 +51,7 @@ export interface FrameSelection {
 }
 
 export interface VideoSpec {
-  mp4Url: string;
-  webmUrl: string;
+  url: string;
   autoplayMutedLoop: boolean;
 }
 
@@ -96,7 +95,7 @@ export interface CreativeBuildResult {
 - `click_area` handles all click-through behavior.
 - Video runtime:
 - `<video muted playsinline autoplay loop>`
-- `<source type="video/mp4">` and `<source type="video/webm">`
+- `<source type="video/mp4">`
 - fallback to `backup.jpg` on load failure
 - No external JS libraries.
 
@@ -121,7 +120,7 @@ export interface CreativeBuildResult {
 
 ## Test Cases
 - Valid export for each size without video.
-- Valid export for each size with `mp4` + `webm`.
+- Valid export for each size with `mp4`.
 - Missing required layer names/types fails with clear fixes.
 - Wrong dimensions fail immediately.
 - `clickTag` resolution works in all three precedence cases.

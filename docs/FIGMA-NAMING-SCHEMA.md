@@ -33,10 +33,11 @@ CTA naming compatibility:
 | Layer name | Type | Rule |
 | --- | --- | --- |
 | `Subheading` | Text node | Optional. Exported as `text-subhead.svg` when present |
+| `video` | Any scene node | Optional hint only. If present without a video URL, export warns and outputs static (no video/tracking). |
 
 ## Video slot rule
 
-- If MP4 + WebM URLs are supplied for a size, the plugin uses `background-image` as the video slot geometry.
+- If a video URL is supplied for a size, the plugin uses `background-image` as the video slot geometry.
 - No separate `video_slot` layer is used.
 - No `poster` layer is used.
 - Fallback static is always generated automatically from a JPG export of the parent frame (`backup.jpg`).

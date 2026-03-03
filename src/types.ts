@@ -6,8 +6,7 @@ export interface SizeDimensions {
 }
 
 export interface VideoSpec {
-  mp4Url: string;
-  webmUrl: string;
+  url: string;
   autoplayMutedLoop: boolean;
 }
 
@@ -123,4 +122,5 @@ export interface CreativeFileSet {
   stylesCss: string;
   mainJs: string;
   manifestJson: string;
+  videoTrackingJs?: string | null;
 }

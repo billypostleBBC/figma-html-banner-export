@@ -20,8 +20,7 @@ const sampleInput: CreativeTemplateInput = {
   dimensions: { width: 970, height: 250 },
   hasVideo: true,
   video: {
-    mp4Url: 'https://cdn.example.com/demo.mp4',
-    webmUrl: 'https://cdn.example.com/demo.webm',
+    url: 'https://cdn.example.com/demo.mp4',
     autoplayMutedLoop: true,
   },
   hasSubhead: true,
@@ -58,6 +57,8 @@ describe('template generation', () => {
     for (const part of fixture.manifestContains) {
       expect(output.manifestJson).toContain(part);
     }
+
+    expect(output.videoTrackingJs).toContain('__ADWORKS_VIDEO_TRACKING__');
   });
 
   test('does not include font declarations in runtime output', () => {
@@ -66,5 +67,17 @@ describe('template generation', () => {
 
     expect(merged).not.toContain('@font-face');
     expect(merged.toLowerCase()).not.toContain('font-family');
+  });
+
+  test('omits tracking script when no video is configured', () => {
+    const output = buildCreativeFiles({
+      ...sampleInput,
+      hasVideo: false,
+      video: null,
+    });
+
+    expect(output.indexHtml).not.toContain('__ADWORKS_VIDEO_TRACKING__');
+    expect(output.indexHtml).not.toContain('videoTracking.js');
+    expect(output.videoTrackingJs).toBeNull();
   });
 });

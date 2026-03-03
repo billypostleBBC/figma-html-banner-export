@@ -43,22 +43,15 @@ export function normalizeVideoSpec(video: VideoSpec | null | undefined): VideoSp
     return null;
   }
 
-  const mp4Url = video.mp4Url.trim();
-  const webmUrl = video.webmUrl.trim();
-  if (!mp4Url && !webmUrl) {
+  const url = video.url.trim();
+  if (!url) {
     return null;
   }
 
-  if (!mp4Url || !webmUrl) {
-    throw new Error('Video requires both MP4 and WebM URLs for each configured size.');
-  }
-
-  assertValidUrl(mp4Url, 'Video MP4 URL');
-  assertValidUrl(webmUrl, 'Video WebM URL');
+  assertValidUrl(url, 'Video URL');
 
   return {
-    mp4Url,
-    webmUrl,
+    url,
     autoplayMutedLoop: video.autoplayMutedLoop,
   };
 }

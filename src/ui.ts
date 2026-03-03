@@ -267,6 +267,9 @@ async function buildFileMap(
   files.set('main.js', encodeUtf8(fileTemplates.mainJs));
   files.set('styles.css', encodeUtf8(fileTemplates.stylesCss));
   files.set('manifest.json', encodeUtf8(fileTemplates.manifestJson));
+  if (fileTemplates.videoTrackingJs) {
+    files.set('videoTracking.js', encodeUtf8(fileTemplates.videoTrackingJs));
+  }
 
   files.set('backup.jpg', backupJpg);
   files.set('assets/bg.webp', bgWebp);
@@ -372,24 +375,17 @@ function collectVideoBySize(): Partial<Record<SupportedSize, VideoSpec | null>> 
   const result: Partial<Record<SupportedSize, VideoSpec | null>> = {};
 
   for (const size of sizeOrder) {
-    const mp4Input = document.getElementById(`video-${size}-mp4`) as HTMLInputElement;
-    const webmInput = document.getElementById(`video-${size}-webm`) as HTMLInputElement;
+    const urlInput = document.getElementById(`video-${size}-url`) as HTMLInputElement;
 
-    const mp4Url = mp4Input.value.trim();
-    const webmUrl = webmInput.value.trim();
+    const url = urlInput.value.trim();
 
-    if (!mp4Url && !webmUrl) {
+    if (!url) {
       result[size] = null;
       continue;
     }
 
-    if (!mp4Url || !webmUrl) {
-      throw new Error(`Provide both MP4 and WebM URLs for ${size}, or leave both empty.`);
-    }
-
     result[size] = {
-      mp4Url,
-      webmUrl,
+      url,
       autoplayMutedLoop: true,
     };
   }

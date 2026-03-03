@@ -14,25 +14,15 @@ describe('shared utilities', () => {
     expect(fileNameForZip('300x600')).toBe('creative_300x600.zip');
   });
 
-  test('normalizeVideoSpec accepts full pair and rejects partial pair', () => {
+  test('normalizeVideoSpec accepts valid URL and trims whitespace', () => {
     expect(
       normalizeVideoSpec({
-        mp4Url: 'https://cdn.example.com/video.mp4',
-        webmUrl: 'https://cdn.example.com/video.webm',
+        url: '  https://cdn.example.com/video.mp4  ',
         autoplayMutedLoop: true,
       }),
     ).toEqual({
-      mp4Url: 'https://cdn.example.com/video.mp4',
-      webmUrl: 'https://cdn.example.com/video.webm',
+      url: 'https://cdn.example.com/video.mp4',
       autoplayMutedLoop: true,
     });
-
-    expect(() =>
-      normalizeVideoSpec({
-        mp4Url: 'https://cdn.example.com/video.mp4',
-        webmUrl: '',
-        autoplayMutedLoop: true,
-      }),
-    ).toThrow('Video requires both MP4 and WebM URLs');
   });
 });

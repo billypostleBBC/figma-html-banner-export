@@ -1,4 +1,9 @@
 import { BuildManifest, CreativeFileSet, CreativeTemplateInput } from './types';
+import {
+  buildVideoTrackingConfigAssignment,
+  buildVideoTrackingJs,
+  createDefaultVideoTrackingConfig,
+} from './videoTracking';
 
 function px(value: number): string {
   return `${Math.round(value * 100) / 100}px`;
@@ -6,11 +11,13 @@ function px(value: number): string {
 
 export function buildIndexHtml(input: CreativeTemplateInput): string {
   const adSizeMeta = `width=${input.dimensions.width},height=${input.dimensions.height}`;
+  const trackingConfig = createDefaultVideoTrackingConfig(`creative_${input.size}`);
+  const trackingConfigScript = buildVideoTrackingConfigAssignment(trackingConfig);
+
   const videoMarkup = input.hasVideo
     ? [
-        '<video id="video" muted playsinline autoplay loop preload="auto" aria-hidden="true">',
-        `  <source src="${escapeHtmlAttr(input.video?.mp4Url ?? '')}" type="video/mp4">`,
-        `  <source src="${escapeHtmlAttr(input.video?.webmUrl ?? '')}" type="video/webm">`,
+        '<video id="video" muted playsinline autoplay preload="auto" aria-hidden="true">',
+        `  <source src="${escapeHtmlAttr(input.video?.url ?? '')}" type="video/mp4">`,
         '</video>',
         '<img id="video-fallback" src="backup.jpg" alt="" aria-hidden="true" hidden>',
       ].join('\n')
@@ -41,6 +48,14 @@ export function buildIndexHtml(input: CreativeTemplateInput): string {
     '    <img id="cta" src="assets/cta.webp" alt="" aria-hidden="true">',
     '    <button id="click_area" type="button" aria-label="Open advertiser website"></button>',
     '  </div>',
+    ...(input.hasVideo
+      ? [
+          '  <script>',
+          `    ${trackingConfigScript}`,
+          '  </script>',
+          '  <script src="videoTracking.js"></script>',
+        ]
+      : []),
     '  <script src="main.js"></script>',
     '</body>',
     '</html>',
@@ -221,6 +236,7 @@ export function buildCreativeFiles(input: CreativeTemplateInput): CreativeFileSe
     stylesCss: buildStylesCss(input),
     mainJs: buildMainJs(),
     manifestJson: buildManifestJson(input),
+    videoTrackingJs: input.hasVideo ? buildVideoTrackingJs() : null,
   };
 }
 
