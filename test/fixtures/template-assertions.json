@@ -4,6 +4,10 @@
     "<img id=\"bg\" src=\"assets/bg.webp\"",
     "<video id=\"video\" muted playsinline autoplay preload=\"auto\"",
     "<source src=\"https://cdn.example.com/demo.mp4\" type=\"video/mp4\">",
+    "<img id=\"video-fallback\" src=\"backup.jpg\"",
+    "<div id=\"video-controls\" role=\"group\" aria-label=\"Video controls\">",
+    "<button id=\"video-control-play\"",
+    "<button id=\"video-control-audio\"",
     "window.__ADWORKS_VIDEO_TRACKING__ = {",
     "<script src=\"videoTracking.js\"></script>",
     "<img id=\"text-headline\" src=\"assets/text-headline.svg\"",
@@ -22,6 +26,13 @@
     "#text-subhead {",
     "#video {",
     "#video-fallback {",
+    "#video-fallback[hidden] {",
+    "#creative.creative-failed > *:not(#click_area) {",
+    "#video-controls {",
+    "  position: absolute;",
+    "  justify-content: space-between;",
+    "#video-controls button {",
+    "  position: relative;",
     "#click_area {"
   ],
   "jsContains": [
@@ -30,6 +41,11 @@
     "var globalValue = window.clickTag;",
     "if (!url || url === placeholderClickTag) return;",
     "window.open(url, \"_blank\");",
+    "var controlPlay = document.getElementById(\"video-control-play\");",
+    "var controlAudio = document.getElementById(\"video-control-audio\");",
+    "controlPlay.addEventListener(\"click\", function (event) {",
+    "controlAudio.addEventListener(\"click\", function (event) {",
+    "creative.classList.add(\"creative-failed\");",
     "video.addEventListener(\"error\", fallback);"
   ],
   "manifestContains": [
