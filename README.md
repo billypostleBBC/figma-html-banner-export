@@ -60,6 +60,7 @@ Download behavior:
 Each creative ZIP contains:
 - `index.html`
 - `main.js`
+- `videoTracking.js` (video creatives only)
 - `styles.css`
 - `backup.jpg`
 - `manifest.json`

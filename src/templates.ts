@@ -1,4 +1,9 @@
 import { BuildManifest, CreativeFileSet, CreativeTemplateInput } from './types';
+import {
+  buildVideoTrackingConfigAssignment,
+  buildVideoTrackingJs,
+  createDefaultVideoTrackingConfig,
+} from './videoTracking';
 
 function px(value: number): string {
   return `${Math.round(value * 100) / 100}px`;
@@ -6,6 +11,13 @@ function px(value: number): string {
 
 export function buildIndexHtml(input: CreativeTemplateInput): string {
   const adSizeMeta = `width=${input.dimensions.width},height=${input.dimensions.height}`;
+  const trackingConfig = createDefaultVideoTrackingConfig(`creative_${input.size}`);
+  const trackingConfigScript = buildVideoTrackingConfigAssignment(trackingConfig);
+
+  const fallbackMarkup = input.hasVideo
+    ? '<img id="video-fallback" src="backup.jpg" alt="" aria-hidden="true" hidden>'
+    : '';
+
   const videoMarkup = input.hasVideo
     ? [
         '<video id="video" muted playsinline autoplay preload="auto" aria-hidden="true">',
@@ -33,9 +45,11 @@ export function buildIndexHtml(input: CreativeTemplateInput): string {
     '  <link rel="stylesheet" href="styles.css">',
     '</head>',
     '<body>',
+    `  ${fallbackMarkup}`,
     '  <div id="creative">',
     '    <img id="bg" src="assets/bg.webp" alt="" aria-hidden="true">',
     `    ${videoMarkup}`,
+    `    ${videoControlsMarkup}`,
     '    <img id="logo" src="assets/logo.webp" alt="" aria-hidden="true">',
     '    <img id="text-headline" src="assets/text-headline.svg" alt="" aria-hidden="true">',
     `    ${subheadMarkup}`,
@@ -43,6 +57,14 @@ export function buildIndexHtml(input: CreativeTemplateInput): string {
     '    <img id="cta" src="assets/cta.webp" alt="" aria-hidden="true">',
     '    <button id="click_area" type="button" aria-label="Open advertiser website"></button>',
     '  </div>',
+    ...(input.hasVideo
+      ? [
+          '  <script>',
+          `    ${trackingConfigScript}`,
+          '  </script>',
+          '  <script src="videoTracking.js"></script>',
+        ]
+      : []),
     '  <script src="main.js"></script>',
     '</body>',
     '</html>',
@@ -63,18 +85,19 @@ export function buildStylesCss(input: CreativeTemplateInput): string {
     '  height: 100%;',
     '  overflow: hidden;',
     '  background: transparent;',
+    '  position: relative;',
     '}',
     '#creative {',
     `  width: ${px(dimensions.width)};`,
     `  height: ${px(dimensions.height)};`,
     '  position: relative;',
+    '  z-index: 1;',
     '  overflow: hidden;',
     '  box-sizing: border-box;',
     '  background: #000;',
     '}',
     '#creative img, #creative video, #creative button {',
     '  position: absolute;',
-    '  display: block;',
     '}',
     '#bg {',
     `  left: ${px(layout.bg.x)};`,
@@ -122,6 +145,16 @@ export function buildStylesCss(input: CreativeTemplateInput): string {
   }
 
   if (hasVideo && layout.videoSlot) {
+    const controlInset = 16;
+    const controlSize = 38;
+    const controlsWidth = Math.max(controlSize * 2 + 12, layout.videoSlot.width - controlInset * 2);
+    const controlsHeight = controlSize;
+    const controlsLeft = layout.videoSlot.x + Math.max(0, (layout.videoSlot.width - controlsWidth) / 2);
+    const controlsTop = Math.max(
+      layout.videoSlot.y + 8,
+      layout.videoSlot.y + layout.videoSlot.height - controlsHeight - controlInset,
+    );
+
     lines.push(
       '#video {',
       `  left: ${px(layout.videoSlot.x)};`,
@@ -208,6 +241,11 @@ export function buildMainJs(): string {
     '    }',
     '',
     '    return placeholderClickTag;',
+    '  }',
+    '',
+    '  function stopEvent(event) {',
+    '    event.preventDefault();',
+    '    event.stopPropagation();',
     '  }',
     '',
     '  var clickArea = document.getElementById("click_area");',
@@ -338,6 +376,7 @@ export function buildCreativeFiles(input: CreativeTemplateInput): CreativeFileSe
     stylesCss: buildStylesCss(input),
     mainJs: buildMainJs(),
     manifestJson: buildManifestJson(input),
+    videoTrackingJs: input.hasVideo ? buildVideoTrackingJs() : null,
   };
 }
 

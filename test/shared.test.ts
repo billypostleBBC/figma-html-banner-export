@@ -22,6 +22,7 @@ describe('shared utilities', () => {
     ).toEqual({
       mp4Url: 'https://cdn.example.com/video.mp4',
     });
+  });
 
     expect(normalizeVideoSpec({ mp4Url: '' })).toBeNull();
   });

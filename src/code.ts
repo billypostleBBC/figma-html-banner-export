@@ -23,6 +23,7 @@ const LAYER_NAMES = {
   cta: 'cta',
   clickArea: 'click_area',
   subhead: 'Subheading',
+  videoHint: 'video',
 } as const;
 let selectionStateFingerprint = '';
 let hasUiHandshake = false;
@@ -228,14 +229,21 @@ function resolveSelectionForExport(
     }
 
     seenSizes.add(size);
-    items.push({
+    const item: SelectionSummaryItem = {
       nodeId: node.id,
       frameName: node.name,
       width: node.width,
       height: node.height,
       size,
       issue: null,
-    });
+    };
+
+    const hasVideoHintLayer = findSceneNodeByName(node, LAYER_NAMES.videoHint) !== null;
+    if (!videoBySize[size] && hasVideoHintLayer) {
+      item.issue = `Layer “${LAYER_NAMES.videoHint}” is present but no video URL was provided. Export will omit video + tracking for ${size}.`;
+    }
+
+    items.push(item);
 
     if (videoBySize[size]) {
       const videoSlot = findSceneNodeByName(node, LAYER_NAMES.video);

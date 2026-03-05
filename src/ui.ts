@@ -276,6 +276,9 @@ async function buildFileMap(
   files.set('main.js', encodeUtf8(fileTemplates.mainJs));
   files.set('styles.css', encodeUtf8(fileTemplates.stylesCss));
   files.set('manifest.json', encodeUtf8(fileTemplates.manifestJson));
+  if (fileTemplates.videoTrackingJs) {
+    files.set('videoTracking.js', encodeUtf8(fileTemplates.videoTrackingJs));
+  }
 
   files.set('backup.jpg', backupJpg);
   files.set('assets/bg.webp', bgWebp);

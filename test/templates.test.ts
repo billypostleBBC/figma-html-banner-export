@@ -56,6 +56,9 @@ describe('template generation', () => {
     for (const part of fixture.manifestContains) {
       expect(output.manifestJson).toContain(part);
     }
+
+    expect(output.videoTrackingJs).toContain('__ADWORKS_VIDEO_TRACKING__');
+    expect(output.mainJs).not.toContain('video.controls = true;');
   });
 
   test('does not include font declarations in runtime output', () => {
@@ -64,5 +67,18 @@ describe('template generation', () => {
 
     expect(merged).not.toContain('@font-face');
     expect(merged.toLowerCase()).not.toContain('font-family');
+  });
+
+  test('omits tracking script when no video is configured', () => {
+    const output = buildCreativeFiles({
+      ...sampleInput,
+      hasVideo: false,
+      video: null,
+    });
+
+    expect(output.indexHtml).not.toContain('__ADWORKS_VIDEO_TRACKING__');
+    expect(output.indexHtml).not.toContain('videoTracking.js');
+    expect(output.indexHtml).not.toContain('id="video-controls"');
+    expect(output.videoTrackingJs).toBeNull();
   });
 });

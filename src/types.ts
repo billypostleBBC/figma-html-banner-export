@@ -121,4 +121,5 @@ export interface CreativeFileSet {
   stylesCss: string;
   mainJs: string;
   manifestJson: string;
+  videoTrackingJs?: string | null;
 }

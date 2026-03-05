@@ -49,8 +49,29 @@ export function assertValidUrl(value: string, fieldName: string): void {
   }
 }
 
-export function normalizeVideoSpec(video: VideoSpec | null | undefined): VideoSpec | null {
-  if (!video) {
+type ParsedUrl = {
+  protocol: string;
+  hostname: string;
+};
+
+function parseUrl(value: string): ParsedUrl | null {
+  if (typeof URL === 'function') {
+    try {
+      const parsed = new URL(value);
+      if (!parsed.hostname) {
+        return null;
+      }
+      return {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  const match = value.match(/^([a-z][a-z0-9+.-]*):\/\/([^/?#\s]+)(?:[/?#]|$)/i);
+  if (!match) {
     return null;
   }
 
