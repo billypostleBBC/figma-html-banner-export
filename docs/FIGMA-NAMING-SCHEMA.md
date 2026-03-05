@@ -9,6 +9,10 @@ This is the exact naming contract the plugin uses when extracting layers from se
   - `970x250`
   - `1024x400`
   - `300x600`
+  - `300x250` (MPU)
+  - `728x90` (Leaderboard)
+  - `320x50` (App)
+  - `300x50` (Mobile)
 - One selected frame per supported size (no duplicates in the same export run).
 - Layer name matching is exact and case-sensitive.
 - The plugin searches by name anywhere inside the frame (`findOne`), not by hierarchy path.
@@ -50,6 +54,10 @@ For team clarity, use:
 - `creative_970x250`
 - `creative_1024x400`
 - `creative_300x600`
+- `creative_300x250`
+- `creative_728x90`
+- `creative_320x50`
+- `creative_300x50`
 
 Example:
 

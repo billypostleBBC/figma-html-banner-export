@@ -4,6 +4,10 @@ export const SUPPORTED_SIZES: Record<SupportedSize, SizeDimensions> = {
   '970x250': { width: 970, height: 250 },
   '1024x400': { width: 1024, height: 400 },
   '300x600': { width: 300, height: 600 },
+  '300x250': { width: 300, height: 250 },
+  '728x90': { width: 728, height: 90 },
+  '320x50': { width: 320, height: 50 },
+  '300x50': { width: 300, height: 50 },
 };
 
 export const REQUIRED_LAYERS = ['background-image', 'Branding', 'Heading', 'compliance', 'cta', 'click_area'] as const;

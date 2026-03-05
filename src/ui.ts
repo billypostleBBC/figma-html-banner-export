@@ -375,7 +375,10 @@ function collectVideoBySize(): Partial<Record<SupportedSize, VideoSpec | null>> 
   const result: Partial<Record<SupportedSize, VideoSpec | null>> = {};
 
   for (const size of sizeOrder) {
-    const urlInput = document.getElementById(`video-${size}-url`) as HTMLInputElement;
+    const urlInput = document.getElementById(`video-${size}-url`) as HTMLInputElement | null;
+    if (!urlInput) {
+      throw new Error(`Video URL input is missing for ${size}. Rebuild and reload the plugin.`);
+    }
 
     const url = urlInput.value.trim();
 

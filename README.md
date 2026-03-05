@@ -4,7 +4,7 @@ Figma plugin for exporting selected design frames into GAM-ready HTML5 creative 
 
 ## MVP Scope
 - Selected frames only.
-- Supported sizes only: `970x250`, `1024x400`, `300x600`.
+- Supported sizes only: `970x250`, `1024x400`, `300x600`, `300x250`, `728x90`, `320x50`, `300x50`.
 - One creative ZIP per size.
 - Multi-size exports download as one bundle ZIP containing each size ZIP.
 - No campaign slug or fallback URL input in plugin UI.
