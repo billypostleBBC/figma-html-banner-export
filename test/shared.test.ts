@@ -25,4 +25,32 @@ describe('shared utilities', () => {
       autoplayMutedLoop: true,
     });
   });
+
+  test('normalizeVideoSpec accepts valid https URL when URL constructor is unavailable', () => {
+    const originalUrl = globalThis.URL;
+
+    Object.defineProperty(globalThis, 'URL', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+
+    try {
+      expect(
+        normalizeVideoSpec({
+          url: 'https://static.bbc-storyworks.com/storyworks/specials/kuwait-fund/videos/919-KuwaitFund_30s_V6_Clean_16x9_subs_1.mp4',
+          autoplayMutedLoop: true,
+        }),
+      ).toEqual({
+        url: 'https://static.bbc-storyworks.com/storyworks/specials/kuwait-fund/videos/919-KuwaitFund_30s_V6_Clean_16x9_subs_1.mp4',
+        autoplayMutedLoop: true,
+      });
+    } finally {
+      Object.defineProperty(globalThis, 'URL', {
+        configurable: true,
+        writable: true,
+        value: originalUrl,
+      });
+    }
+  });
 });

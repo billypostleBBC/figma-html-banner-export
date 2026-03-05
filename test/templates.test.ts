@@ -59,6 +59,7 @@ describe('template generation', () => {
     }
 
     expect(output.videoTrackingJs).toContain('__ADWORKS_VIDEO_TRACKING__');
+    expect(output.mainJs).not.toContain('video.controls = true;');
   });
 
   test('does not include font declarations in runtime output', () => {
@@ -78,6 +79,7 @@ describe('template generation', () => {
 
     expect(output.indexHtml).not.toContain('__ADWORKS_VIDEO_TRACKING__');
     expect(output.indexHtml).not.toContain('videoTracking.js');
+    expect(output.indexHtml).not.toContain('id="video-controls"');
     expect(output.videoTrackingJs).toBeNull();
   });
 });

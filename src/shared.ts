@@ -26,16 +26,46 @@ export function parseSupportedSize(width: number, height: number): SupportedSize
 }
 
 export function assertValidUrl(value: string, fieldName: string): void {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
+  const parsed = parseUrl(value);
+  if (!parsed) {
     throw new Error(`${fieldName} must be a valid URL.`);
   }
 
-  if (url.protocol !== 'https:') {
+  if (parsed.protocol !== 'https:') {
     throw new Error(`${fieldName} must use https://.`);
   }
+}
+
+type ParsedUrl = {
+  protocol: string;
+  hostname: string;
+};
+
+function parseUrl(value: string): ParsedUrl | null {
+  if (typeof URL === 'function') {
+    try {
+      const parsed = new URL(value);
+      if (!parsed.hostname) {
+        return null;
+      }
+      return {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  const match = value.match(/^([a-z][a-z0-9+.-]*):\/\/([^/?#\s]+)(?:[/?#]|$)/i);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    protocol: `${match[1].toLowerCase()}:`,
+    hostname: match[2],
+  };
 }
 
 export function normalizeVideoSpec(video: VideoSpec | null | undefined): VideoSpec | null {
