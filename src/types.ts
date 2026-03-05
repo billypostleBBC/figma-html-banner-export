@@ -6,8 +6,7 @@ export interface SizeDimensions {
 }
 
 export interface VideoSpec {
-  url: string;
-  autoplayMutedLoop: boolean;
+  mp4Url: string;
 }
 
 export interface LayerBox {

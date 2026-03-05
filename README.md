@@ -40,12 +40,12 @@ CTA naming note:
 
 Optional:
 - `Subheading` (text)
+- `Image/Video` (sized scene node used as video slot only when MP4 is configured)
 
 Video behavior:
-- If a video URL is supplied for a size, `background-image` is used as the video slot geometry.
-- No separate `video_slot` or `poster` layer is required.
-- `backup.jpg` is always auto-generated from the parent frame export for static fallback.
-- If a `video` hint layer exists but no URL is supplied, export warns and omits video/tracking for that size.
+- If an MP4 URL is supplied for a size, `Image/Video` is used as the video slot geometry.
+- Runtime video uses `object-fit: cover`, `autoplay`, `muted` by default, and `loop = false`.
+- Runtime control buttons are rendered above `click_area` (play/pause/replay bottom-left, mute/unmute bottom-right).
 
 If required layers are missing, mistyped, or wrong type, export fails with an actionable error.
 

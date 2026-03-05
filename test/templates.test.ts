@@ -20,8 +20,7 @@ const sampleInput: CreativeTemplateInput = {
   dimensions: { width: 970, height: 250 },
   hasVideo: true,
   video: {
-    url: 'https://cdn.example.com/demo.mp4',
-    autoplayMutedLoop: true,
+    mp4Url: 'https://cdn.example.com/demo.mp4',
   },
   hasSubhead: true,
   layout: {

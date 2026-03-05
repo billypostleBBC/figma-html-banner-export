@@ -24,10 +24,19 @@ const exportButton = document.getElementById('export-btn') as HTMLButtonElement;
 const statusEl = document.getElementById('status') as HTMLDivElement;
 const selectionList = document.getElementById('selection-list') as HTMLUListElement;
 const resultList = document.getElementById('result-list') as HTMLUListElement;
+const videoGroups = new Map<SupportedSize, HTMLFieldSetElement>();
 
 const sizeOrder = Object.keys(SUPPORTED_SIZES) as SupportedSize[];
 const UI_LOG_PREFIX = '[HTML Banner Export][ui]';
 let crcTable: Uint32Array | null = null;
+let selectedSizes = new Set<SupportedSize>();
+
+for (const node of Array.from(document.querySelectorAll<HTMLFieldSetElement>('[data-video-size]'))) {
+  const size = node.dataset.videoSize;
+  if (size && isSupportedSize(size)) {
+    videoGroups.set(size, node);
+  }
+}
 
 window.addEventListener('error', (event) => {
   logUi('window-error', {
@@ -375,18 +384,20 @@ function collectVideoBySize(): Partial<Record<SupportedSize, VideoSpec | null>> 
   const result: Partial<Record<SupportedSize, VideoSpec | null>> = {};
 
   for (const size of sizeOrder) {
-    const urlInput = document.getElementById(`video-${size}-url`) as HTMLInputElement;
+    if (!selectedSizes.has(size)) {
+      result[size] = null;
+      continue;
+    }
 
-    const url = urlInput.value.trim();
-
-    if (!url) {
+    const mp4Input = document.getElementById(`video-${size}-mp4`) as HTMLInputElement;
+    const mp4Url = mp4Input.value.trim();
+    if (!mp4Url) {
       result[size] = null;
       continue;
     }
 
     result[size] = {
-      url,
-      autoplayMutedLoop: true,
+      mp4Url,
     };
   }
 
@@ -398,6 +409,7 @@ function renderSelection(
   issues: string[],
 ): void {
   selectionList.replaceChildren();
+  updateVisibleVideoFields(items);
 
   if (items.length === 0) {
     const li = document.createElement('li');
@@ -453,6 +465,28 @@ function renderResults(results: CreativeBuildResult[]): void {
 
 function clearResults(): void {
   resultList.replaceChildren();
+}
+
+function updateVisibleVideoFields(
+  items: Array<{ size: SupportedSize | null }>,
+): void {
+  selectedSizes = new Set(
+    items
+      .filter((item): item is { size: SupportedSize } => item.size !== null)
+      .map((item) => item.size),
+  );
+
+  for (const size of sizeOrder) {
+    const fieldset = videoGroups.get(size);
+    if (!fieldset) {
+      continue;
+    }
+    fieldset.hidden = !selectedSizes.has(size);
+  }
+}
+
+function isSupportedSize(value: string): value is SupportedSize {
+  return value in SUPPORTED_SIZES;
 }
 
 function setStatus(message: string, level: 'info' | 'success' | 'error'): void {
