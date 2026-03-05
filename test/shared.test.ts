@@ -22,43 +22,60 @@ describe('shared utilities', () => {
     expect(fileNameForZip('300x50')).toBe('creative_300x50.zip');
   });
 
-  test('normalizeVideoSpec accepts valid URL and trims whitespace', () => {
+  test('normalizeVideoSpec accepts MP4 and ignores empty values', () => {
     expect(
       normalizeVideoSpec({
-        url: '  https://cdn.example.com/video.mp4  ',
-        autoplayMutedLoop: true,
+        mp4Url: 'https://cdn.example.com/video.mp4',
       }),
     ).toEqual({
-      url: 'https://cdn.example.com/video.mp4',
-      autoplayMutedLoop: true,
+      mp4Url: 'https://cdn.example.com/video.mp4',
     });
   });
 
-  test('normalizeVideoSpec accepts valid https URL when URL constructor is unavailable', () => {
-    const originalUrl = globalThis.URL;
+    expect(normalizeVideoSpec({ mp4Url: '' })).toBeNull();
+  });
 
-    Object.defineProperty(globalThis, 'URL', {
-      configurable: true,
-      writable: true,
-      value: undefined,
+  test('normalizeVideoSpec accepts HTTPS URLs wrapped in quotes', () => {
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '\'https://cdn.example.com/video.mp4\'',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
     });
 
-    try {
-      expect(
-        normalizeVideoSpec({
-          url: 'https://static.bbc-storyworks.com/storyworks/specials/kuwait-fund/videos/919-KuwaitFund_30s_V6_Clean_16x9_subs_1.mp4',
-          autoplayMutedLoop: true,
-        }),
-      ).toEqual({
-        url: 'https://static.bbc-storyworks.com/storyworks/specials/kuwait-fund/videos/919-KuwaitFund_30s_V6_Clean_16x9_subs_1.mp4',
-        autoplayMutedLoop: true,
-      });
-    } finally {
-      Object.defineProperty(globalThis, 'URL', {
-        configurable: true,
-        writable: true,
-        value: originalUrl,
-      });
-    }
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '"https://cdn.example.com/video.mp4"',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
+    });
+  });
+
+  test('normalizeVideoSpec accepts URLs wrapped in smart quotes and angle brackets', () => {
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '“https://cdn.example.com/video.mp4”',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
+    });
+
+    expect(
+      normalizeVideoSpec({
+        mp4Url: '<https://cdn.example.com/video.mp4>',
+      }),
+    ).toEqual({
+      mp4Url: 'https://cdn.example.com/video.mp4',
+    });
+  });
+
+  test('normalizeVideoSpec keeps https-only requirement', () => {
+    expect(() =>
+      normalizeVideoSpec({
+        mp4Url: 'http://cdn.example.com/video.mp4',
+      }),
+    ).toThrow('Video MP4 URL must use https://.');
   });
 });

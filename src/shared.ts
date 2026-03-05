@@ -30,13 +30,26 @@ export function parseSupportedSize(width: number, height: number): SupportedSize
 }
 
 export function assertValidUrl(value: string, fieldName: string): void {
-  const parsed = parseUrl(value);
-  if (!parsed) {
+  const normalized = normalizeUrlInput(value);
+  if (!normalized) {
     throw new Error(`${fieldName} must be a valid URL.`);
   }
 
-  if (parsed.protocol !== 'https:') {
+  if (!normalized.toLowerCase().startsWith('https://')) {
     throw new Error(`${fieldName} must use https://.`);
+  }
+
+  try {
+    const url = new URL(normalized);
+    if (url.protocol !== 'https:') {
+      throw new Error(`${fieldName} must use https://.`);
+    }
+  } catch {
+    // Figma plugin runtime can reject some pasted strings with hidden chars.
+    // Keep MVP permissive: if it clearly looks like an https URL with no spaces, accept it.
+    if (!/^https:\/\/\S+$/i.test(normalized)) {
+      throw new Error(`${fieldName} must be a valid URL.`);
+    }
   }
 }
 
@@ -66,28 +79,43 @@ function parseUrl(value: string): ParsedUrl | null {
     return null;
   }
 
+  const mp4Url = normalizeUrlInput(video.mp4Url);
+  if (!mp4Url) {
+    return null;
+  }
+
+  assertValidUrl(mp4Url, 'Video MP4 URL');
+
   return {
-    protocol: `${match[1].toLowerCase()}:`,
-    hostname: match[2],
+    mp4Url,
   };
 }
 
-export function normalizeVideoSpec(video: VideoSpec | null | undefined): VideoSpec | null {
-  if (!video) {
-    return null;
+function normalizeUrlInput(value: string): string {
+  let trimmed = value
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u00A0/g, ' ')
+    .trim();
+
+  trimmed = stripWrapped(trimmed, '\'', '\'');
+  trimmed = stripWrapped(trimmed, '"', '"');
+  trimmed = stripWrapped(trimmed, '“', '”');
+  trimmed = stripWrapped(trimmed, '‘', '’');
+  trimmed = stripWrapped(trimmed, '<', '>');
+
+  return trimmed.trim();
+}
+
+function stripWrapped(value: string, start: string, end: string): string {
+  if (value.length < 2) {
+    return value;
   }
 
-  const url = video.url.trim();
-  if (!url) {
-    return null;
+  if (value.startsWith(start) && value.endsWith(end)) {
+    return value.slice(start.length, value.length - end.length).trim();
   }
 
-  assertValidUrl(url, 'Video URL');
-
-  return {
-    url,
-    autoplayMutedLoop: video.autoplayMutedLoop,
-  };
+  return value;
 }
 
 export function bytesToKB(bytes: number): string {
