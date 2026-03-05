@@ -1,4 +1,11 @@
-export type SupportedSize = '970x250' | '1024x400' | '300x600';
+export type SupportedSize =
+  | '970x250'
+  | '1024x400'
+  | '300x600'
+  | '300x250'
+  | '728x90'
+  | '320x50'
+  | '300x50';
 
 export interface SizeDimensions {
   width: number;
